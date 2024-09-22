@@ -47,7 +47,6 @@ def save_and_parse_html(html_content, writefile=False, filename="output.html"):
     # Save the HTML content to a file
     if writefile:
         outdir = Path(gettempdir() / Path(filename))
-        #outdir = Path("C:\\Users\\Bene\\Desktop\\output.html")
         with open(outdir, "w", encoding="utf-8") as file:
             file.write(html_content)
         print(f"HTML content saved to {outdir}")
@@ -74,4 +73,27 @@ div class="content definitions dictionary biling easy"
 
 # Step 1: Obtain all translations with collins dictionary
 div = soup.find_all("div", class_= "cit type-example")
-div.find("sense")
+
+def extract_quote_pair(html_tag):
+    french_quote = html_tag.find('span', class_='quote')
+    english_translation = html_tag.find('span', class_='cit type-translation').find('span', class_='quote')
+    if french_quote and english_translation:
+        return {
+            'french': french_quote.get_text(strip=True).replace(u'\xa0', u' '),
+            'english': english_translation.get_text(strip=True).replace(u'\xa0', u' ')
+        }
+    else:
+        return None
+
+test = extract_quote_pair(div[0])
+
+# Step 2: Extract quotes and their translations
+def get_quotes(html_content):
+    """
+    Extract quotes and translations for word
+    """
+    return [extract_quote_pair(x) for x in div]
+
+quotes = get_quotes(div)
+
+# Now we only need the correct translations instead of the shitty google translate ones
