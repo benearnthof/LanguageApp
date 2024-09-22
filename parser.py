@@ -1,12 +1,12 @@
 from bs4 import BeautifulSoup
 import gzip
 import io
-import urllib
+from urllib.request import Request, urlopen
 from pathlib import Path
 from tempfile import gettempdir
 from unicodedata import normalize
 from unidecode import unidecode
-from tqdm import tqdm
+from tqdm.auto import tqdm, trange
 import csv
 
 class DictionaryParser():
@@ -21,8 +21,8 @@ class DictionaryParser():
         ):
         self.csv_path = csv_path
         self.rooturl = rooturl
-        self.word_list = self.parse_csv(self.csv_path)
-        self.requests = self.build_resquests()
+        self.word_list = self.parse_csv()
+        self.requests = self.build_requests()
 
 
     def parse_csv(self):
@@ -38,7 +38,7 @@ class DictionaryParser():
         requests = []
         for word in tqdm(self.word_list):
             target = unidecode(word)
-            req = urllib.request.Request(f"https://www.collinsdictionary.com/dictionary/french-english/{target}")
+            req = Request(f"https://www.collinsdictionary.com/dictionary/french-english/{target}")
             req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0')
             req.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8')
             req.add_header('Accept-Language', "en-US,en;q=0.5")
@@ -102,12 +102,11 @@ class DictionaryParser():
         else:
             return None
 
-    @staticmethod
-    def get_quotes(html_content):
+    def get_quotes(self, html_content):
         """
         Extract quotes and translations for word
         """
-        return [extract_quote_pair(x) for x in html_content]
+        return [self.extract_quote_pair(x) for x in html_content]
 
     @staticmethod
     def extract_translations(html_tag):
@@ -120,9 +119,8 @@ class DictionaryParser():
                 return translation_anchor.get_text(strip=True)
         return None  # Return None if no translation is found
 
-    @staticmethod
-    def get_translations(html_content):
-        return list(set([x for x in [extract_translations(x) for x in html_content] if x]))
+    def get_translations(self, html_content):
+        return list(set([x for x in [self.extract_translations(x) for x in html_content] if x]))
 
 
     def parse_dictionary(self):
@@ -139,18 +137,18 @@ class DictionaryParser():
         }
         """
         target_dictionary = []
-        for index, req in enumerate(tqdm(self.requests)):
+        for index, req in enumerate(pbar := tqdm(self.requests)):
             word = self.word_list[index]
             # Save the content and get the soup object
-            resource = urllib.request.urlopen(req)
+            resource = urlopen(req)
             content = self.parse_resource(resource)
             soup = self.save_and_parse_html(content, writefile=False)
             # Step 1: Obtain all quotes with collins dictionary
             div = soup.find_all("div", class_= "cit type-example")
-            quotes = get_quotes(div)
+            quotes = self.get_quotes(div)
             # Step 2: Obtain the correct translations instead of the shitty google translate ones
             div = soup.find_all("div", class_= "sense")
-            translations = get_translations(div)
+            translations = self.get_translations(div)
             output = {
                 'id': index,
                 'french': word,
@@ -158,4 +156,10 @@ class DictionaryParser():
                 'examples': quotes
             }
             target_dictionary.append(output)
+            (temp := translations[0] if translations else "None")
+            pbar.set_description(f"In: {word} Out: {temp}")
         return target_dictionary
+
+# FIXME: URL can't contain control characters. '/dictionary/french-english/est-ce que' (found at least ' ')
+# FIXME: Save target dictionary to disk
+# FIXME: Parallel scraping would be nice
