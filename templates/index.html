@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>French Vocabulary Trainer</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding-top: 50px; }
+        #word { font-size: 24px; margin-bottom: 20px; }
+        #answer { font-size: 18px; padding: 5px; }
+        #submit { font-size: 18px; padding: 5px 10px; }
+        #result { margin-top: 20px; font-weight: bold; }
+        #stats { margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <h1>French Vocabulary Trainer</h1>
+    <div id="word"></div>
+    <input type="text" id="answer" placeholder="Enter English translation">
+    <button id="submit">Submit</button>
+    <div id="result"></div>
+    <div id="stats"></div>
+
+    <script>
+        let currentWordId;
+
+        function loadNewWord() {
+            $.get('/get_word', function(data) {
+                $('#word').text(data.french);
+                currentWordId = data.id;
+                $('#answer').val('').focus();
+                $('#result').text('');
+            });
+        }
+
+        function updateStats() {
+            $.get('/stats', function(data) {
+                $('#stats').html(`Total Score: ${data.total_score}<br>Total Queries: ${data.total_queries}`);
+            });
+        }
+
+        $('#submit').click(function() {
+            $.post('/check_answer', {id: currentWordId, answer: $('#answer').val()}, function(data) {
+                if (data.correct) {
+                    $('#result').text('Correct!').css('color', 'green');
+                } else {
+                    $('#result').text(`Incorrect. The correct answer is: ${data.answer}`).css('color', 'red');
+                }
+                updateStats();
+                setTimeout(loadNewWord, 2000);
+            });
+        });
+
+        $(document).ready(function() {
+            loadNewWord();
+            updateStats();
+        });
+    </script>
+</body>
+</html>
