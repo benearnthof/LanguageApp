@@ -4,6 +4,7 @@ import io
 import urllib
 from pathlib import Path
 from tempfile import gettempdir
+from unicodedata import normalize
 
 req = urllib.request.Request("https://www.collinsdictionary.com/dictionary/french-english/etre")
 req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0')
@@ -68,10 +69,7 @@ print(soup.title)  # Print the title of the page
 print(soup.find_all('p'))  # Find all paragraph tags
 
 
-
-div class="content definitions dictionary biling easy"
-
-# Step 1: Obtain all translations with collins dictionary
+# Step 1: Obtain all quotes with collins dictionary
 div = soup.find_all("div", class_= "cit type-example")
 
 def extract_quote_pair(html_tag):
@@ -79,21 +77,37 @@ def extract_quote_pair(html_tag):
     english_translation = html_tag.find('span', class_='cit type-translation').find('span', class_='quote')
     if french_quote and english_translation:
         return {
-            'french': french_quote.get_text(strip=True).replace(u'\xa0', u' '),
-            'english': english_translation.get_text(strip=True).replace(u'\xa0', u' ')
+            'french': normalize("NFKD", french_quote.get_text(strip=True)),
+            'english': normalize("NFKD", english_translation.get_text(strip=True))
         }
     else:
         return None
 
 test = extract_quote_pair(div[0])
 
-# Step 2: Extract quotes and their translations
 def get_quotes(html_content):
     """
     Extract quotes and translations for word
     """
-    return [extract_quote_pair(x) for x in div]
+    return [extract_quote_pair(x) for x in html_content]
 
 quotes = get_quotes(div)
 
-# Now we only need the correct translations instead of the shitty google translate ones
+# Step 2: Obtain the correct translations instead of the shitty google translate ones
+
+div = soup.find_all("div", class_= "sense")
+
+def extract_translations(html_tag):
+    translation_span = html_tag.find("span", class_="cit type-translation")
+    if translation_span:
+        # Find the first anchor tag within this span
+        translation_anchor = translation_span.find('a', class_='quote')
+        if translation_anchor:
+            # Extract the text from the anchor tag
+            return translation_anchor.get_text(strip=True)
+    return None  # Return None if no translation is found
+
+def get_translations(html_content):
+    return list(set([x for x in [extract_translations(x) for x in html_content] if x]))
+
+translations = get_translations(div)
