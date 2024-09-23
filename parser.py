@@ -8,6 +8,18 @@ from unicodedata import normalize
 from unidecode import unidecode
 from tqdm.auto import tqdm, trange
 import csv
+from typing import Optional
+import logging
+import sys
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("debug.log"),
+        logging.StreamHandler()
+    ]
+)
 
 class DictionaryParser():
     """
@@ -17,13 +29,19 @@ class DictionaryParser():
     def __init__(
         self, 
         csv_path: str,
+        target_dict_path: Optional[str] = "french_dictionary.json",
         rooturl: str = "https://www.collinsdictionary.com/dictionary/french-english/"
         ):
+        self.logger = logging.getLogger()
         self.csv_path = csv_path
         self.rooturl = rooturl
+        self.target_dict_path = target_dict_path
         self.word_list = self.parse_csv()
         self.requests = self.build_requests()
+        self.target_dictionary = self.load_target_dictionary()
 
+    def __len__(self):
+        return len(self.word_list)
 
     def parse_csv(self):
         """Extract list of words from csv"""
@@ -38,6 +56,8 @@ class DictionaryParser():
         requests = []
         for word in tqdm(self.word_list):
             target = unidecode(word)
+            if " " in target:
+                target.replace(" ", "-")
             req = Request(f"https://www.collinsdictionary.com/dictionary/french-english/{target}")
             req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0')
             req.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8')
@@ -54,6 +74,7 @@ class DictionaryParser():
             req.add_header('Priority', "u=0, i")
             req.add_header('Pragma', "no-cache")
             requests.append(req)
+        self.logger.info(msg=f"Built {len(requests)} from provided word list.")
         return requests
 
     @staticmethod
@@ -122,6 +143,24 @@ class DictionaryParser():
     def get_translations(self, html_content):
         return list(set([x for x in [self.extract_translations(x) for x in html_content] if x]))
 
+    def load_target_dictionary(self):
+        if self.target_dict_path is None:
+            logger.info("No target dictionary path given, initializing empty target dictionary.")
+            return []
+        elif Path(self.target_dict_path).exists():
+            logger.info(f"Loading target dictionary from {Path(self.target_dict_path)}.")
+            with open(self.target_dict_path) as f:
+                self.target_dictionary = json.load(f)
+
+    def save_target_dictionary(self):
+        if self.target_dict_path is None:
+            logger.info("No target dictionary path given, target dictionary was not saved.")
+        elif Path(self.target_dict_path).exists() and self.target_dictionary is not None:
+            logger.info(f"Found target dict at {Path(self.target_dict_path)}. Overwriting...")
+            with open(self.target_dict_path, 'w') as f:
+                json.dump(self.target_dictionary, f)
+        else:
+            logger.info("Both path and target dictionary must be given. Returning.")
 
     def parse_dictionary(self):
         """
