@@ -15,6 +15,7 @@ def init_db():
     conn.close()
 
 def populate_db():
+    # TODO: Adjust to include synonyms & Phrases
     conn = sqlite3.connect('vocabulary.db')
     c = conn.cursor()
     with open('french_words.csv', 'r', encoding='utf-8') as f:
@@ -44,6 +45,7 @@ def get_word():
 
 @app.route('/check_answer', methods=['POST'])
 def check_answer():
+    # TODO: Adjust to check for synonyms from parser
     word_id = request.form['id']
     user_answer = request.form['answer']
     

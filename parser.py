@@ -11,6 +11,8 @@ import csv
 from typing import Optional
 import logging
 import sys
+import hashlib
+import json
 
 logging.basicConfig(
     level=logging.INFO,
@@ -74,7 +76,7 @@ class DictionaryParser():
             req.add_header('Priority', "u=0, i")
             req.add_header('Pragma', "no-cache")
             requests.append(req)
-        self.logger.info(msg=f"Built {len(requests)} from provided word list.")
+        self.logger.info(msg=f"Built {len(requests)} requests from provided word list.")
         return requests
 
     @staticmethod
@@ -145,22 +147,27 @@ class DictionaryParser():
 
     def load_target_dictionary(self):
         if self.target_dict_path is None:
-            logger.info("No target dictionary path given, initializing empty target dictionary.")
+            self.logger.info("No target dictionary path given, initializing empty target dictionary.")
             return []
         elif Path(self.target_dict_path).exists():
-            logger.info(f"Loading target dictionary from {Path(self.target_dict_path)}.")
+            self.logger.info(f"Loading target dictionary from {Path(self.target_dict_path)}.")
             with open(self.target_dict_path) as f:
                 self.target_dictionary = json.load(f)
+        else: 
+            self.logger.info(f"No existing target dictionary found at {Path(self.target_dict_path)}. Initializing as empty list.")
+            return []
 
     def save_target_dictionary(self):
         if self.target_dict_path is None:
-            logger.info("No target dictionary path given, target dictionary was not saved.")
+            self.logger.info("No target dictionary path given, target dictionary was not saved.")
         elif Path(self.target_dict_path).exists() and self.target_dictionary is not None:
-            logger.info(f"Found target dict at {Path(self.target_dict_path)}. Overwriting...")
+            self.logger.info(f"Found target dict at {Path(self.target_dict_path)}. Overwriting...")
             with open(self.target_dict_path, 'w') as f:
                 json.dump(self.target_dictionary, f)
         else:
-            logger.info("Both path and target dictionary must be given. Returning.")
+            self.logger.info(f"Creating new target dictionary at {Path(self.target_dict_path)}")
+            with open(self.target_dict_path, 'w') as f:
+                json.dump(self.target_dictionary, f)
 
     def parse_dictionary(self):
         """
@@ -174,31 +181,36 @@ class DictionaryParser():
             'translations': json.loads(word[2]),
             'examples': json.loads(word[3])
         }
-        """
-        target_dictionary = []
+        """        
         for index, req in enumerate(pbar := tqdm(self.requests)):
             word = self.word_list[index]
-            # Save the content and get the soup object
-            resource = urlopen(req)
-            content = self.parse_resource(resource)
-            soup = self.save_and_parse_html(content, writefile=False)
-            # Step 1: Obtain all quotes with collins dictionary
-            div = soup.find_all("div", class_= "cit type-example")
-            quotes = self.get_quotes(div)
-            # Step 2: Obtain the correct translations instead of the shitty google translate ones
-            div = soup.find_all("div", class_= "sense")
-            translations = self.get_translations(div)
-            output = {
-                'id': index,
-                'french': word,
-                'translations': translations,
-                'examples': quotes
-            }
-            target_dictionary.append(output)
+            hashid = hashlib.sha1((word + str(index)).encode("utf-8")).hexdigest()
+            if self.target_dictionary and any([x['hashid'] == hashid for x in self.target_dictionary]):
+                self.logger.info(f"Found {word} in dictionary, skipping...")
+                continue
+            try:
+                resource = urlopen(req)
+                content = self.parse_resource(resource)
+                soup = self.save_and_parse_html(content, writefile=False)
+                # Step 1: Obtain all quotes with collins dictionary
+                div = soup.find_all("div", class_= "cit type-example")
+                quotes = self.get_quotes(div)
+                # Step 2: Obtain the correct translations instead of the shitty google translate ones
+                div = soup.find_all("div", class_= "sense")
+                translations = self.get_translations(div)
+                output = {
+                    'hashid': hashid,
+                    'index': index,
+                    'french': word,
+                    'translations': translations,
+                    'examples': quotes
+                }
+                self.target_dictionary.append(output)
+            except:
+                self.logger.info(f"Unable to parse url for word {word} at position {index}.")
             (temp := translations[0] if translations else "None")
             pbar.set_description(f"In: {word} Out: {temp}")
-        return target_dictionary
+        self.save_target_dictionary()
+        self.logger.info("Finished Parsing dictionary")
 
-# FIXME: URL can't contain control characters. '/dictionary/french-english/est-ce que' (found at least ' ')
-# FIXME: Save target dictionary to disk
 # FIXME: Parallel scraping would be nice

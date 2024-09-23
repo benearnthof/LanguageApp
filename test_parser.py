@@ -1,7 +1,9 @@
 from parser import DictionaryParser
 
-parser = DictionaryParser("french_words.csv")
+parser = DictionaryParser("test_words.csv")
 
-assert len(parser) == 10000
+assert len(parser) == 9
 
-spaces = [x for x in parser.word_list if " " in x]
+parser.parse_dictionary()
+
+parser.load_target_dictionary()
