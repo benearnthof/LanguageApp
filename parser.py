@@ -187,6 +187,7 @@ class DictionaryParser():
         """        
         for index, req in enumerate(pbar := tqdm(self.requests)):
             word = self.word_list[index]
+            # TODO: recalculate hashes based on just the input word
             hashid = hashlib.sha1((word + str(index)).encode("utf-8")).hexdigest()
             if self.target_dictionary and any([x['hashid'] == hashid for x in self.target_dictionary]):
                 self.logger.info(f"Found {word} in dictionary, skipping...")
