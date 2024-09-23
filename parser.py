@@ -223,4 +223,14 @@ class DictionaryParser():
         self.target_dictionary = valid_entries
         self.save_target_dictionary()
 
+    def fill_in_missing_words(self):
+        """Fill in missing values with deepl."""
+        # TODO: Add to fill in missing words
+        pass
+
+    def fill_in_missing_examples(self):
+        """Fill in missing examples with context.reverso.net"""
+        # TODO: Add to fill in missing examples
+
+
 # FIXME: Parallel scraping would be nice

@@ -31,18 +31,14 @@ parser10k.verify_dictionary()
 req = parser10k.requests[0]
 resource = urlopen(req)
 
-
-
-
-
 parser10k.parse_dictionary()
 
+# investigating the failed requests:
+infile = "debug.log"
 
+with open(infile) as f:
+    f = f.readlines()
 
+failed_requests = [line for line in f if "Unable" in line]
 
-
-missing_translations = [x for x in parser10k.target_dictionary if len(x["translations"]) < 1]
-
-valid_entries = [x for x in parser10k.target_dictionary if len(x["translations"]) > 0]
-parser10k.target_dictionary = valid_entries
-parser10k.save_target_dictionary()
+print(important)
