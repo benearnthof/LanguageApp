@@ -24,14 +24,14 @@ parser10k = DictionaryParser("french_words.csv", target_dict_path="french_dictio
 
 len(parser10k.target_dictionary)
 
-parser10k.verify_dictionary()
-
 
 # there is something wrong with the requests we are sending
 req = parser10k.requests[0]
 resource = urlopen(req)
 
 parser10k.parse_dictionary()
+parser10k.verify_dictionary()
+
 
 # investigating the failed requests:
 infile = "debug.log"
@@ -41,4 +41,20 @@ with open(infile) as f:
 
 failed_requests = [line for line in f if "Unable" in line]
 
-print(important)
+# 45 requests fail, probably because of collins dictionary as the site varies for some words
+# around 1000 words did not get a translation at all, we need to fix them.
+# we have verified and word list. We can get missing translations and examples from deepl and context reverso
+
+
+# which word has the most valid translations?
+len(parser10k.target_dictionary)
+
+synonyms = [(index, len(entry['translations'])) for index, entry in enumerate(parser10k.target_dictionary)]
+
+current = (0, 0)
+for tup in synonyms:
+    if tup[1] > current[1]:
+        current = tup
+
+parser10k.target_dictionary[current[0]]["french"]
+parser10k.target_dictionary[current[0]]["translations"]
