@@ -39,6 +39,7 @@ class DictionaryParser():
         self.rooturl = rooturl
         self.target_dict_path = target_dict_path
         self.word_list = self.parse_csv()
+        # TODO: Force user to provide valid cookie. Check if request works then continue with init
         self.requests = self.build_requests()
         self.target_dictionary = self.load_target_dictionary()
 
@@ -67,7 +68,8 @@ class DictionaryParser():
             req.add_header('Accept-Encoding', 'gzip, deflate, br, zstd')
             req.add_header('Referer', 'https://www.google.com/')
             req.add_header('Connection', 'keep-alive')
-            req.add_header('Cookie', "dictcode=english; OptanonConsent=isGpcEnabled=0&datestamp=Sun+Sep+22+2024+15%3A47%3A57+GMT%2B0200+(Central+European+Summer+Time)&version=202407.2.0&browserGpcFlag=0&isIABGlobal=false&hosts=&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A1%2CC0003%3A1%2CC0004%3A1&AwaitingReconsent=false&geolocation=%3B; search=tired; OptanonAlertBoxClosed=2024-09-22T13:47:57.194Z; _sp_id.a65e=89ae10bc-c518-4a54-b1ad-21915386119f.1704373384.24.1727012948.1725047739.19c4f032-0ece-4a62-9126-58666cda97b5.57993c83-cd25-4954-b1ec-5bc9928da09d.937055f8-123d-49fc-9235-819b9937ab46.1727009550798.33; XSRF-TOKEN=aa9cc3be-3fb8-40a8-8f6a-14a4a6688b57; __cf_bm=Q3t5713M.0dSuBcNfQiYjLrQ.XbopJoLX7w_YZe7aZc-1727012310-1.0.1.1-mThgLqatf9yVYnb9VrUj3tQ6SB61uPnjTe8z9Z3fRjN66Gp16D4EK1U99wfNy47ApM.6RSeNpTeg_P0sqvifCg; __cflb=02DiuFwNDm462z9fWfJeB58usqeie1xoSFfw8vtVHcfoA; _sp_ses.a65e=*; cf_clearance=Qsj16LdYDnbi89EmCuoFazU.Q26b8HvYXH_urmkqHho-1727012316-1.2.1.1-0Kich.LCajmMpiTQ7.NF2nOag37HzSYIFQ3eGZ65zOqv1rHiffqdr1no88f0KlJ77Wt5K2pJ_G9olK1Ukjlm0d8RGxX0GvQkgCX2I90Km5T1o_HMc49ZFher1vjIFZmVcFFPPkGYWJA5Z5Yhht3OZ43sUoTX9gMg0UhwGapGRAvQkjlXfUUerIKZg8r46bRt2EI4oAad.rU7ypZKIHKNWXpEKvTkeGE_6aEoGVQP7oNzFy9FZLQm_Ko5IcYx3BM.eX9.5WoWJ6UWf_V..E1.hAfJO2b5dF1YU.0hZ7W7QQNy.yYAHAqLhThSLFYgQyYHCR8WCd3dDTptJkb.yTOmqTQHsHtlAZ6E9qfMnyk14rs; JSESSIONID=94A6C7C1E28076C5BF87DDAD33DDE79A-n1")
+            # FIXME: Need logic to refresh cookie with browser input. Should be done upon init
+            req.add_header('Cookie', "dictcode=french-english; OptanonConsent=isGpcEnabled=0&datestamp=Mon+Sep+23+2024+13%3A50%3A26+GMT%2B0200+(Central+European+Summer+Time)&version=202407.2.0&browserGpcFlag=0&isIABGlobal=false&hosts=&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A1%2CC0003%3A1%2CC0004%3A1&AwaitingReconsent=false&geolocation=%3B; search=pharmacy; OptanonAlertBoxClosed=2024-09-23T11:50:26.873Z; _sp_id.a65e=89ae10bc-c518-4a54-b1ad-21915386119f.1704373384.30.1727093705.1727089473.7dfe78c7-feae-4e81-a226-230029b54f92.5abe4bd6-8ad2-4bbe-ad47-ad53590838cb.0aeeb8bd-f28c-4659-bcbc-c76af16b60db.1727092054861.7; searchPanelOpen=true; XSRF-TOKEN=156dcaff-c54b-4a7c-a4bb-2694a7c011a6; __cf_bm=IgBW3jVQ_Ta8adP5rcjgovJZl5vlFSsKH5lSDEKpfuc-1727093718-1.0.1.1-vIsvObnkVExL.kBIwU0sMM6ONdgdL7bQMUtMyZvhf4LTrzp6iDmk7VU56AEKXDkqJmK73iHnPYSa2IgniUM2cw; _sp_ses.a65e=*; cf_clearance=RwaCG_pNQdNa1RQSWaK2J07LnD7PjDNc1dZtW1t5eWc-1727092240-1.2.1.1-Y1THYYlxF6fgKNrd.Ypffo35rezT_Ay1_WO_SkpUkAARUTU3PbjnZE9GsLgcXBfKBvkICqGFWrg8MQy5u.k_.6ZgiuXJpdwnqDLpI6sfLdA.OLdTYQ0XpQkF0m.wY7DEJ733NcW2EzHosX8Ys0t6Xzw2SYn7zSZBvFCjXrgx0hOKJvnnEQQIYtMPHVaqwxujdv_chdoTFVTwcWKFIUbCpIVx5jcWcUXgteS58x0QYUdBad5jsHrRUUcTMgVkc9iPN7vhpeODUdXfn4oqq4a7DJTmy0H3wMAgGo6FTovi.leEL2CcVrOayZHp6dZ15ZCCiqhUciRzEZ1MuFRXdA_tXZTIS0u8V4SaxRvXT2F9Eg8; __cflb=02DiuFwNDm462z9fWfJeB58usqeie1xoT21wVKJV8LQWG")
             req.add_header('Upgrade-Insecure-Requests', 1)
             req.add_header('Sec-Fetch-Dest', "document")
             req.add_header('Sec-Fetch-Mode', "navigate")
@@ -152,7 +154,8 @@ class DictionaryParser():
         elif Path(self.target_dict_path).exists():
             self.logger.info(f"Loading target dictionary from {Path(self.target_dict_path)}.")
             with open(self.target_dict_path) as f:
-                self.target_dictionary = json.load(f)
+                target_dictionary = json.load(f)
+                return target_dictionary
         else: 
             self.logger.info(f"No existing target dictionary found at {Path(self.target_dict_path)}. Initializing as empty list.")
             return []
@@ -189,6 +192,7 @@ class DictionaryParser():
                 self.logger.info(f"Found {word} in dictionary, skipping...")
                 continue
             try:
+                # TODO: after about 3000 requests this fails
                 resource = urlopen(req)
                 content = self.parse_resource(resource)
                 soup = self.save_and_parse_html(content, writefile=False)
@@ -205,12 +209,18 @@ class DictionaryParser():
                     'translations': translations,
                     'examples': quotes
                 }
+                (temp := translations[0] if translations else "None")
+                pbar.set_description(f"In: {word} Out: {temp}")
                 self.target_dictionary.append(output)
             except:
                 self.logger.info(f"Unable to parse url for word {word} at position {index}.")
-            (temp := translations[0] if translations else "None")
-            pbar.set_description(f"In: {word} Out: {temp}")
         self.save_target_dictionary()
         self.logger.info("Finished Parsing dictionary")
+
+    def verify_dictionary(self):
+        valid_entries = [x for x in self.target_dictionary if len(x["translations"]) > 0]
+        self.logger.info(f"Removed {len(self.target_dictionary) - len(valid_entries)} invalid entries from dictionary")
+        self.target_dictionary = valid_entries
+        self.save_target_dictionary()
 
 # FIXME: Parallel scraping would be nice
